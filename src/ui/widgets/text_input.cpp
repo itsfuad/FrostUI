@@ -1,8 +1,15 @@
 #include "frost/ui/widgets/text_input.hpp"
 #include "frost/graphics/draw_list.hpp"
+#include "frost/graphics/bitmap_font.hpp"
 #include <algorithm>
 
 namespace frost {
+
+// Helper to calculate character width based on font size and bitmap font dimensions
+static f32 get_char_width(f32 font_size) {
+    // Bitmap font is 8x16, so aspect ratio is 0.5
+    return font_size * static_cast<f32>(BitmapFont::GLYPH_WIDTH) / static_cast<f32>(BitmapFont::GLYPH_HEIGHT);
+}
 
 Unique<TextInput> TextInput::create() {
     return Unique<TextInput>(new TextInput("", TextInputStyle{}));
@@ -159,8 +166,8 @@ Color TextInput::current_border_color() const {
 }
 
 f32 TextInput::calculate_text_width(StringView text) const {
-    // Placeholder: approximate width based on character count
-    return static_cast<f32>(text.size()) * style_.font_size * 0.6f;
+    // Use actual bitmap font character width
+    return static_cast<f32>(text.size()) * get_char_width(style_.font_size);
 }
 
 f32 TextInput::calculate_text_height() const {
@@ -169,7 +176,7 @@ f32 TextInput::calculate_text_height() const {
 
 usize TextInput::get_char_at_x(f32 x) const {
     f32 content_x = bounds_.x + padding_.left - scroll_offset_;
-    f32 char_width = style_.font_size * 0.6f;
+    f32 char_width = get_char_width(style_.font_size);
 
     if (x <= content_x) return 0;
 
@@ -240,7 +247,7 @@ void TextInput::render(DrawList& draw_list) {
             usize sel_start = std::min(selection_start_, selection_end_);
             usize sel_end = std::max(selection_start_, selection_end_);
 
-            f32 char_width = style_.font_size * 0.6f;
+            f32 char_width = get_char_width(style_.font_size);
             f32 sel_x = content_x + static_cast<f32>(sel_start) * char_width - scroll_offset_;
             f32 sel_width = static_cast<f32>(sel_end - sel_start) * char_width;
 
@@ -257,7 +264,7 @@ void TextInput::render(DrawList& draw_list) {
 
     // Draw cursor
     if (is_focused() && cursor_blink_time_ < kCursorBlinkRate) {
-        f32 char_width = style_.font_size * 0.6f;
+        f32 char_width = get_char_width(style_.font_size);
         f32 cursor_x = content_x + static_cast<f32>(cursor_pos_) * char_width - scroll_offset_;
 
         draw_list.add_rect_filled(
