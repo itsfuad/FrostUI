@@ -52,10 +52,7 @@ target_include_directories(frost_core
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(frost_core
-    PUBLIC
-        glm::glm
-)
+# frost_core is now dependency-free (custom math types)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Platform Library

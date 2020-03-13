@@ -1,12 +1,10 @@
 #pragma once
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FrostUI Math Types
+// FrostUI Math Types - No external dependencies
 // ─────────────────────────────────────────────────────────────────────────────
 
 #include "frost/core/types.hpp"
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cmath>
 
@@ -16,20 +14,213 @@ namespace frost {
 // Vector Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-using Vec2 = glm::vec2;
-using Vec3 = glm::vec3;
-using Vec4 = glm::vec4;
+struct Vec2 {
+    f32 x{0.0f}, y{0.0f};
 
-using IVec2 = glm::ivec2;
-using IVec3 = glm::ivec3;
-using IVec4 = glm::ivec4;
+    constexpr Vec2() = default;
+    constexpr Vec2(f32 x_, f32 y_) : x(x_), y(y_) {}
+    constexpr explicit Vec2(f32 v) : x(v), y(v) {}
 
-using UVec2 = glm::uvec2;
-using UVec3 = glm::uvec3;
-using UVec4 = glm::uvec4;
+    constexpr Vec2 operator+(const Vec2& o) const { return {x + o.x, y + o.y}; }
+    constexpr Vec2 operator-(const Vec2& o) const { return {x - o.x, y - o.y}; }
+    constexpr Vec2 operator*(f32 s) const { return {x * s, y * s}; }
+    constexpr Vec2 operator/(f32 s) const { return {x / s, y / s}; }
+    constexpr Vec2 operator*(const Vec2& o) const { return {x * o.x, y * o.y}; }
+    constexpr Vec2& operator+=(const Vec2& o) { x += o.x; y += o.y; return *this; }
+    constexpr Vec2& operator-=(const Vec2& o) { x -= o.x; y -= o.y; return *this; }
+    constexpr Vec2& operator*=(f32 s) { x *= s; y *= s; return *this; }
+    constexpr bool operator==(const Vec2& o) const { return x == o.x && y == o.y; }
 
-using Mat3 = glm::mat3;
-using Mat4 = glm::mat4;
+    [[nodiscard]] f32 length() const { return std::sqrt(x*x + y*y); }
+    [[nodiscard]] constexpr f32 length_squared() const { return x*x + y*y; }
+    [[nodiscard]] Vec2 normalized() const { f32 l = length(); return l > 0 ? Vec2{x/l, y/l} : Vec2{}; }
+    [[nodiscard]] constexpr f32 dot(const Vec2& o) const { return x*o.x + y*o.y; }
+};
+
+struct Vec3 {
+    f32 x{0.0f}, y{0.0f}, z{0.0f};
+
+    constexpr Vec3() = default;
+    constexpr Vec3(f32 x_, f32 y_, f32 z_) : x(x_), y(y_), z(z_) {}
+    constexpr explicit Vec3(f32 v) : x(v), y(v), z(v) {}
+    constexpr Vec3(const Vec2& v, f32 z_) : x(v.x), y(v.y), z(z_) {}
+
+    constexpr Vec3 operator+(const Vec3& o) const { return {x + o.x, y + o.y, z + o.z}; }
+    constexpr Vec3 operator-(const Vec3& o) const { return {x - o.x, y - o.y, z - o.z}; }
+    constexpr Vec3 operator*(f32 s) const { return {x * s, y * s, z * s}; }
+    constexpr Vec3 operator/(f32 s) const { return {x / s, y / s, z / s}; }
+    constexpr Vec3& operator+=(const Vec3& o) { x += o.x; y += o.y; z += o.z; return *this; }
+    constexpr bool operator==(const Vec3& o) const { return x == o.x && y == o.y && z == o.z; }
+
+    [[nodiscard]] f32 length() const { return std::sqrt(x*x + y*y + z*z); }
+    [[nodiscard]] constexpr f32 length_squared() const { return x*x + y*y + z*z; }
+    [[nodiscard]] Vec3 normalized() const { f32 l = length(); return l > 0 ? Vec3{x/l, y/l, z/l} : Vec3{}; }
+    [[nodiscard]] constexpr f32 dot(const Vec3& o) const { return x*o.x + y*o.y + z*o.z; }
+    [[nodiscard]] constexpr Vec3 cross(const Vec3& o) const {
+        return {y*o.z - z*o.y, z*o.x - x*o.z, x*o.y - y*o.x};
+    }
+};
+
+struct Vec4 {
+    f32 x{0.0f}, y{0.0f}, z{0.0f}, w{0.0f};
+
+    constexpr Vec4() = default;
+    constexpr Vec4(f32 x_, f32 y_, f32 z_, f32 w_) : x(x_), y(y_), z(z_), w(w_) {}
+    constexpr explicit Vec4(f32 v) : x(v), y(v), z(v), w(v) {}
+    constexpr Vec4(const Vec3& v, f32 w_) : x(v.x), y(v.y), z(v.z), w(w_) {}
+
+    constexpr Vec4 operator+(const Vec4& o) const { return {x + o.x, y + o.y, z + o.z, w + o.w}; }
+    constexpr Vec4 operator-(const Vec4& o) const { return {x - o.x, y - o.y, z - o.z, w - o.w}; }
+    constexpr Vec4 operator*(f32 s) const { return {x * s, y * s, z * s, w * s}; }
+    constexpr bool operator==(const Vec4& o) const { return x == o.x && y == o.y && z == o.z && w == o.w; }
+};
+
+// Integer vectors
+struct IVec2 {
+    i32 x{0}, y{0};
+    constexpr IVec2() = default;
+    constexpr IVec2(i32 x_, i32 y_) : x(x_), y(y_) {}
+};
+
+struct IVec3 {
+    i32 x{0}, y{0}, z{0};
+    constexpr IVec3() = default;
+    constexpr IVec3(i32 x_, i32 y_, i32 z_) : x(x_), y(y_), z(z_) {}
+};
+
+struct IVec4 {
+    i32 x{0}, y{0}, z{0}, w{0};
+    constexpr IVec4() = default;
+    constexpr IVec4(i32 x_, i32 y_, i32 z_, i32 w_) : x(x_), y(y_), z(z_), w(w_) {}
+};
+
+// Unsigned vectors
+struct UVec2 {
+    u32 x{0}, y{0};
+    constexpr UVec2() = default;
+    constexpr UVec2(u32 x_, u32 y_) : x(x_), y(y_) {}
+};
+
+struct UVec3 {
+    u32 x{0}, y{0}, z{0};
+    constexpr UVec3() = default;
+    constexpr UVec3(u32 x_, u32 y_, u32 z_) : x(x_), y(y_), z(z_) {}
+};
+
+struct UVec4 {
+    u32 x{0}, y{0}, z{0}, w{0};
+    constexpr UVec4() = default;
+    constexpr UVec4(u32 x_, u32 y_, u32 z_, u32 w_) : x(x_), y(y_), z(z_), w(w_) {}
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Matrix Types (column-major, OpenGL/Vulkan compatible)
+// ─────────────────────────────────────────────────────────────────────────────
+
+struct Mat3 {
+    f32 m[9]{1,0,0, 0,1,0, 0,0,1};  // Column-major: m[col*3 + row]
+
+    constexpr Mat3() = default;
+    constexpr explicit Mat3(f32 diagonal) : m{diagonal,0,0, 0,diagonal,0, 0,0,diagonal} {}
+
+    constexpr f32& operator()(i32 row, i32 col) { return m[col * 3 + row]; }
+    constexpr f32 operator()(i32 row, i32 col) const { return m[col * 3 + row]; }
+
+    constexpr Vec3 operator*(const Vec3& v) const {
+        return {
+            m[0]*v.x + m[3]*v.y + m[6]*v.z,
+            m[1]*v.x + m[4]*v.y + m[7]*v.z,
+            m[2]*v.x + m[5]*v.y + m[8]*v.z
+        };
+    }
+
+    constexpr Mat3 operator*(const Mat3& o) const {
+        Mat3 r;
+        for (i32 col = 0; col < 3; ++col) {
+            for (i32 row = 0; row < 3; ++row) {
+                r(row, col) = 0;
+                for (i32 k = 0; k < 3; ++k) {
+                    r(row, col) += (*this)(row, k) * o(k, col);
+                }
+            }
+        }
+        return r;
+    }
+
+    static constexpr Mat3 identity() { return Mat3{1.0f}; }
+};
+
+struct Mat4 {
+    f32 m[16]{1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};  // Column-major
+
+    constexpr Mat4() = default;
+    constexpr explicit Mat4(f32 diagonal) : m{diagonal,0,0,0, 0,diagonal,0,0, 0,0,diagonal,0, 0,0,0,diagonal} {}
+
+    constexpr f32& operator()(i32 row, i32 col) { return m[col * 4 + row]; }
+    constexpr f32 operator()(i32 row, i32 col) const { return m[col * 4 + row]; }
+
+    constexpr Vec4 operator*(const Vec4& v) const {
+        return {
+            m[0]*v.x + m[4]*v.y + m[8]*v.z + m[12]*v.w,
+            m[1]*v.x + m[5]*v.y + m[9]*v.z + m[13]*v.w,
+            m[2]*v.x + m[6]*v.y + m[10]*v.z + m[14]*v.w,
+            m[3]*v.x + m[7]*v.y + m[11]*v.z + m[15]*v.w
+        };
+    }
+
+    constexpr Mat4 operator*(const Mat4& o) const {
+        Mat4 r;
+        for (i32 col = 0; col < 4; ++col) {
+            for (i32 row = 0; row < 4; ++row) {
+                r(row, col) = 0;
+                for (i32 k = 0; k < 4; ++k) {
+                    r(row, col) += (*this)(row, k) * o(k, col);
+                }
+            }
+        }
+        return r;
+    }
+
+    [[nodiscard]] const f32* data() const { return m; }
+
+    static constexpr Mat4 identity() { return Mat4{1.0f}; }
+
+    static Mat4 ortho(f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far) {
+        Mat4 r{1.0f};
+        r(0,0) = 2.0f / (right - left);
+        r(1,1) = 2.0f / (top - bottom);
+        r(2,2) = -2.0f / (far - near);
+        r(0,3) = -(right + left) / (right - left);
+        r(1,3) = -(top + bottom) / (top - bottom);
+        r(2,3) = -(far + near) / (far - near);
+        return r;
+    }
+
+    static Mat4 translation(f32 x, f32 y, f32 z) {
+        Mat4 r{1.0f};
+        r(0,3) = x;
+        r(1,3) = y;
+        r(2,3) = z;
+        return r;
+    }
+
+    static Mat4 scale(f32 sx, f32 sy, f32 sz) {
+        Mat4 r{1.0f};
+        r(0,0) = sx;
+        r(1,1) = sy;
+        r(2,2) = sz;
+        return r;
+    }
+
+    static Mat4 rotation_z(f32 radians) {
+        Mat4 r{1.0f};
+        f32 c = std::cos(radians);
+        f32 s = std::sin(radians);
+        r(0,0) = c;  r(0,1) = -s;
+        r(1,0) = s;  r(1,1) = c;
+        return r;
+    }
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Point2D
@@ -327,28 +518,33 @@ struct Edges {
 // ─────────────────────────────────────────────────────────────────────────────
 
 struct Transform2D {
-    Mat3 matrix{1.0f};
+    Mat3 matrix;
 
-    Transform2D() = default;
+    Transform2D() : matrix(1.0f) {}
     explicit Transform2D(const Mat3& m) : matrix(m) {}
 
     [[nodiscard]] static Transform2D identity() { return {}; }
 
     [[nodiscard]] static Transform2D translation(f32 x, f32 y) {
         Transform2D t;
-        t.matrix = glm::translate(Mat4(1.0f), Vec3(x, y, 0.0f));
+        t.matrix(0, 2) = x;
+        t.matrix(1, 2) = y;
         return t;
     }
 
     [[nodiscard]] static Transform2D scale(f32 sx, f32 sy) {
         Transform2D t;
-        t.matrix = glm::scale(Mat4(1.0f), Vec3(sx, sy, 1.0f));
+        t.matrix(0, 0) = sx;
+        t.matrix(1, 1) = sy;
         return t;
     }
 
     [[nodiscard]] static Transform2D rotation(f32 radians) {
         Transform2D t;
-        t.matrix = glm::rotate(Mat4(1.0f), radians, Vec3(0.0f, 0.0f, 1.0f));
+        f32 c = std::cos(radians);
+        f32 s = std::sin(radians);
+        t.matrix(0, 0) = c;  t.matrix(0, 1) = -s;
+        t.matrix(1, 0) = s;  t.matrix(1, 1) = c;
         return t;
     }
 

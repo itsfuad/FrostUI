@@ -5,65 +5,31 @@
 include(FetchContent)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Vulkan SDK (optional for now)
+# Vulkan SDK (optional - user can enable with FROST_USE_VULKAN)
 # ─────────────────────────────────────────────────────────────────────────────
 
-find_package(Vulkan QUIET)
-if(Vulkan_FOUND)
+option(FROST_USE_VULKAN "Use Vulkan renderer instead of software renderer" OFF)
+
+if(FROST_USE_VULKAN)
+    find_package(Vulkan REQUIRED)
     message(STATUS "Found Vulkan: ${Vulkan_INCLUDE_DIRS}")
     set(FROST_HAS_VULKAN TRUE CACHE INTERNAL "")
-else()
-    message(WARNING "Vulkan SDK not found - graphics library will be stubbed")
-    set(FROST_HAS_VULKAN FALSE CACHE INTERNAL "")
-endif()
 
-# ─────────────────────────────────────────────────────────────────────────────
-# GLM (Mathematics)
-# ─────────────────────────────────────────────────────────────────────────────
-
-FetchContent_Declare(
-    glm
-    GIT_REPOSITORY https://github.com/g-truc/glm.git
-    GIT_TAG 1.0.1
-    GIT_SHALLOW TRUE
-)
-
-set(GLM_ENABLE_CXX_20 ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(glm)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Vulkan Memory Allocator (only if Vulkan found)
-# ─────────────────────────────────────────────────────────────────────────────
-
-if(FROST_HAS_VULKAN)
+    # Vulkan Memory Allocator
     FetchContent_Declare(
         VulkanMemoryAllocator
         GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
         GIT_TAG v3.1.0
         GIT_SHALLOW TRUE
     )
-
     FetchContent_MakeAvailable(VulkanMemoryAllocator)
+else()
+    message(STATUS "Using software renderer (no external dependencies)")
+    set(FROST_HAS_VULKAN FALSE CACHE INTERNAL "")
 endif()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STB Libraries (header-only)
-# ─────────────────────────────────────────────────────────────────────────────
-
-FetchContent_Declare(
-    stb
-    GIT_REPOSITORY https://github.com/nothings/stb.git
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-)
-
-FetchContent_MakeAvailable(stb)
-
-add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Catch2 (Testing)
+# Catch2 (Testing) - only external dependency for tests
 # ─────────────────────────────────────────────────────────────────────────────
 
 if(FROST_BUILD_TESTS)

@@ -4,12 +4,14 @@ A modern C++20 GUI framework with platform abstraction for Linux (X11) and Windo
 
 ## Features
 
+- **Zero external dependencies** - Custom math types, embedded bitmap font
 - **Retained-mode UI** with signal-slot architecture
 - **Flexbox-like layout system** (HBox, VBox, Center containers)
 - **Essential widgets**: Button, Label, TextInput, Container
 - **Cross-platform**: Linux (X11) and Windows (Win32)
 - **Modern C++20**: concepts, constexpr, std::optional, RAII
 - **Rust-style error handling** with `Result<T>`
+- **Software renderer** by default, optional Vulkan backend
 
 ## Requirements
 
@@ -29,6 +31,21 @@ sudo pacman -S libx11
 
 # Fedora
 sudo dnf install libX11-devel
+```
+
+### Optional: Vulkan SDK (for GPU rendering)
+
+If you want to use the Vulkan renderer instead of the software renderer:
+
+```bash
+# Ubuntu/Debian
+sudo apt install vulkan-sdk
+
+# Arch Linux
+sudo pacman -S vulkan-devel
+
+# Fedora
+sudo dnf install vulkan-devel
 ```
 
 ## Building
