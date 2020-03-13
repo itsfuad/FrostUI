@@ -166,6 +166,9 @@ add_library(frost_ui STATIC
     src/ui/application.cpp
     src/ui/widget.cpp
     src/ui/layout.cpp
+    src/ui/widgets/label.cpp
+    src/ui/widgets/button.cpp
+    src/ui/widgets/text_input.cpp
 )
 
 target_include_directories(frost_ui
