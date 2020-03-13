@@ -200,6 +200,9 @@ public:
     void set_cursor_visible(bool visible) override;
     Point2D cursor_position() const override;
 
+    // Rendering
+    void present_pixels(const u8* pixels, i32 width, i32 height) override;
+
 private:
     void process_event(XEvent& event);
     KeyCode translate_keycode(unsigned int keycode, KeySym keysym);
@@ -212,6 +215,7 @@ private:
 
     Display* display_{nullptr};
     ::Window window_{0};
+    GC gc_{nullptr};  // Graphics context for rendering
     XIM xim_{nullptr};
     XIC xic_{nullptr};
 
@@ -289,6 +293,9 @@ X11Window::X11Window(const WindowConfig& config)
         throw std::runtime_error("Failed to create X11 window");
     }
 
+    // Create graphics context for rendering
+    gc_ = XCreateGC(display_, window_, 0, nullptr);
+
     // Setup WM protocols
     wm_delete_window_ = XInternAtom(display_, "WM_DELETE_WINDOW", False);
     wm_state_ = XInternAtom(display_, "WM_STATE", False);
@@ -346,6 +353,9 @@ X11Window::~X11Window() {
     }
     if (xim_) {
         XCloseIM(xim_);
+    }
+    if (gc_ && display_) {
+        XFreeGC(display_, gc_);
     }
     if (window_ && display_) {
         XDestroyWindow(display_, window_);
@@ -769,6 +779,52 @@ void X11Window::set_cursor_visible(bool visible) {
 
 Point2D X11Window::cursor_position() const {
     return input_state_.mouse_position();
+}
+
+void X11Window::present_pixels(const u8* pixels, i32 width, i32 height) {
+    if (!display_ || !window_ || !gc_ || !pixels) {
+        return;
+    }
+
+    // Get screen depth
+    int screen = DefaultScreen(display_);
+    int depth = DefaultDepth(display_, screen);
+    Visual* visual = DefaultVisual(display_, screen);
+
+    // Create XImage from pixel data
+    // Note: XImage expects the data in the format of the display, which is typically BGR on x86
+    // We need to convert from RGBA to the display format
+
+    // Allocate temporary buffer for BGR(A) format
+    Vector<u8> buffer(width * height * 4);
+
+    // Convert RGBA to BGRA (X11 typically uses BGRA on little-endian systems)
+    for (i32 i = 0; i < width * height; ++i) {
+        buffer[i * 4 + 0] = pixels[i * 4 + 2];  // B
+        buffer[i * 4 + 1] = pixels[i * 4 + 1];  // G
+        buffer[i * 4 + 2] = pixels[i * 4 + 0];  // R
+        buffer[i * 4 + 3] = pixels[i * 4 + 3];  // A
+    }
+
+    XImage* image = XCreateImage(
+        display_, visual, depth, ZPixmap, 0,
+        reinterpret_cast<char*>(buffer.data()),
+        width, height,
+        32, 0
+    );
+
+    if (image) {
+        // Don't let X free our buffer
+        image->data = reinterpret_cast<char*>(buffer.data());
+
+        XPutImage(display_, window_, gc_, image, 0, 0, 0, 0, width, height);
+
+        // Prevent XDestroyImage from freeing our buffer
+        image->data = nullptr;
+        XDestroyImage(image);
+    }
+
+    XFlush(display_);
 }
 
 Result<Unique<PlatformWindow>> PlatformWindow::create(const WindowConfig& config) {

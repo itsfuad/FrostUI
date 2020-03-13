@@ -30,6 +30,15 @@ struct DrawCommand {
     u32 texture_id{0};  // 0 = no texture
 };
 
+/// A text draw command
+struct TextCommand {
+    Point2D position;
+    String text;
+    Color color;
+    f32 size;
+    Rect clip_rect;
+};
+
 /// Immediate-mode style draw list for 2D rendering
 class DrawList {
 public:
@@ -86,8 +95,9 @@ public:
     [[nodiscard]] Span<const DrawVertex> vertices() const { return vertices_; }
     [[nodiscard]] Span<const u32> indices() const { return indices_; }
     [[nodiscard]] Span<const DrawCommand> commands() const { return commands_; }
+    [[nodiscard]] Span<const TextCommand> text_commands() const { return text_commands_; }
 
-    [[nodiscard]] bool empty() const { return vertices_.empty(); }
+    [[nodiscard]] bool empty() const { return vertices_.empty() && text_commands_.empty(); }
 
 private:
     void add_vertex(const DrawVertex& v);
@@ -100,6 +110,7 @@ private:
     Vector<DrawVertex> vertices_;
     Vector<u32> indices_;
     Vector<DrawCommand> commands_;
+    Vector<TextCommand> text_commands_;
     Vector<Rect> clip_stack_;
 };
 

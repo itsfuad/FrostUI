@@ -140,6 +140,16 @@ public:
     virtual Point2D cursor_position() const = 0;
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Rendering
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// Present pixels to the window (software rendering)
+    /// @param pixels RGBA8 pixel data (width * height * 4 bytes)
+    /// @param width Width of the pixel data
+    /// @param height Height of the pixel data
+    virtual void present_pixels(const u8* pixels, i32 width, i32 height) = 0;
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Signals
     // ─────────────────────────────────────────────────────────────────────────
 

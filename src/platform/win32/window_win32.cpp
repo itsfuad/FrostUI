@@ -228,6 +228,9 @@ public:
     void set_cursor_visible(bool visible) override;
     Point2D cursor_position() const override;
 
+    // Rendering
+    void present_pixels(const u8* pixels, i32 width, i32 height) override;
+
 private:
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT handle_message(UINT msg, WPARAM wparam, LPARAM lparam);
@@ -794,6 +797,46 @@ void Win32Window::set_cursor_visible(bool visible) {
 
 Point2D Win32Window::cursor_position() const {
     return input_state_.mouse_position();
+}
+
+void Win32Window::present_pixels(const u8* pixels, i32 width, i32 height) {
+    if (!hwnd_ || !pixels) {
+        return;
+    }
+
+    HDC hdc = GetDC(hwnd_);
+    if (!hdc) {
+        return;
+    }
+
+    BITMAPINFO bmi{};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = width;
+    bmi.bmiHeader.biHeight = -height;  // Negative for top-down DIB
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    // Convert RGBA to BGRA for Windows
+    Vector<u8> buffer(width * height * 4);
+    for (i32 i = 0; i < width * height; ++i) {
+        buffer[i * 4 + 0] = pixels[i * 4 + 2];  // B
+        buffer[i * 4 + 1] = pixels[i * 4 + 1];  // G
+        buffer[i * 4 + 2] = pixels[i * 4 + 0];  // R
+        buffer[i * 4 + 3] = pixels[i * 4 + 3];  // A
+    }
+
+    StretchDIBits(
+        hdc,
+        0, 0, width_, height_,   // Destination rect
+        0, 0, width, height,     // Source rect
+        buffer.data(),
+        &bmi,
+        DIB_RGB_COLORS,
+        SRCCOPY
+    );
+
+    ReleaseDC(hwnd_, hdc);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

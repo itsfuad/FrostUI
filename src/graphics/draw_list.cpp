@@ -7,6 +7,7 @@ void DrawList::clear() {
     vertices_.clear();
     indices_.clear();
     commands_.clear();
+    text_commands_.clear();
     clip_stack_.clear();
 }
 
@@ -234,11 +235,13 @@ void DrawList::add_triangle_filled(Point2D p1, Point2D p2, Point2D p3, Color col
 }
 
 void DrawList::add_text(Point2D pos, StringView text, Color color, f32 size) {
-    // Placeholder: Draw a rectangle where text would be
-    // Actual text rendering requires font atlas integration
-    f32 width = static_cast<f32>(text.size()) * size * 0.6f;
-    f32 height = size;
-    add_rect_filled(Rect{pos.x, pos.y, width, height}, color.with_alpha(0.3f));
+    TextCommand cmd;
+    cmd.position = pos;
+    cmd.text = String(text);
+    cmd.color = color;
+    cmd.size = size;
+    cmd.clip_rect = current_clip_rect();
+    text_commands_.push_back(std::move(cmd));
 }
 
 } // namespace frost

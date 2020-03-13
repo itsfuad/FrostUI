@@ -140,6 +140,8 @@ else()
     add_library(frost_graphics STATIC
         src/graphics/draw_list.cpp
         src/graphics/renderer.cpp
+        src/graphics/software_renderer.cpp
+        src/graphics/bitmap_font.cpp
     )
 
     target_include_directories(frost_graphics

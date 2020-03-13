@@ -121,8 +121,15 @@ void Application::render() {
         root_->render(draw_list_);
     }
 
-    // Note: Actual rendering to screen would happen here via Renderer
-    // For now, we just build the draw list
+    // Render draw list to pixels and present to window
+    auto size = window_->size();
+    i32 width = static_cast<i32>(size.width);
+    i32 height = static_cast<i32>(size.height);
+
+    if (width > 0 && height > 0) {
+        const u8* pixels = renderer_.render(draw_list_, width, height);
+        window_->present_pixels(pixels, width, height);
+    }
 }
 
 void Application::handle_mouse_move(f64 x, f64 y) {

@@ -4,6 +4,7 @@
 #include "frost/core/result.hpp"
 #include "frost/platform/window.hpp"
 #include "frost/graphics/draw_list.hpp"
+#include "frost/graphics/software_renderer.hpp"
 #include "frost/ui/widget.hpp"
 
 namespace frost {
@@ -84,6 +85,7 @@ private:
     Unique<PlatformWindow> window_;
     Unique<Widget> root_;
     DrawList draw_list_;
+    SoftwareRenderer renderer_;
 
     Widget* focused_widget_{nullptr};
     Widget* hovered_widget_{nullptr};
