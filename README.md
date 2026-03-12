@@ -80,6 +80,8 @@ The demo application showcases:
 - Counter with increment/decrement/reset buttons
 - Text input with greeting functionality
 - Flexbox layout with VBox and HBox containers
+<img width="906" height="734" alt="image" src="https://github.com/user-attachments/assets/47c2b90a-a6a3-4f0d-9e53-b602077b9ee8" />
+
 
 ## Quick Start
 
