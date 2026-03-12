@@ -36,11 +36,36 @@ struct WindowConfig {
     i32 max_height{0};   // 0 = no max
     bool resizable{true};
     bool decorated{true};
+    bool show_minimize_button{true};
+    bool show_maximize_button{true};
     bool transparent{false};
     bool always_on_top{false};
     bool maximized{false};
     bool visible{true};
     f32 dpi_scale{1.0f}; // 0 = auto-detect
+
+    struct Icon {
+        i32 width{0};
+        i32 height{0};
+        Vector<u8> rgba8;
+
+        [[nodiscard]] bool is_valid() const {
+            return width > 0 &&
+                   height > 0 &&
+                   rgba8.size() == static_cast<usize>(width * height * 4);
+        }
+    };
+
+    struct Icons {
+        Option<Icon> large;
+        Option<Icon> small;
+
+        [[nodiscard]] bool empty() const {
+            return !large.has_value() && !small.has_value();
+        }
+    };
+
+    Icons icons;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -109,6 +134,7 @@ public:
     // ─────────────────────────────────────────────────────────────────────────
 
     virtual void set_title(StringView title) = 0;
+    virtual void set_icons(const WindowConfig::Icons& icons) = 0;
     virtual void set_size(i32 width, i32 height) = 0;
     virtual void set_position(i32 x, i32 y) = 0;
     virtual void set_min_size(i32 width, i32 height) = 0;
@@ -116,6 +142,8 @@ public:
     virtual void set_visible(bool visible) = 0;
     virtual void set_resizable(bool resizable) = 0;
     virtual void set_decorated(bool decorated) = 0;
+    virtual void set_show_minimize_button(bool show) = 0;
+    virtual void set_show_maximize_button(bool show) = 0;
 
     virtual void minimize() = 0;
     virtual void maximize() = 0;

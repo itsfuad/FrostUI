@@ -19,8 +19,10 @@
 #include <Windows.h>
 #include <windowsx.h>
 #include <ShellScalingApi.h>
+#include <cstring>
 #include <map>
 #include <string>
+#include <vector>
 
 #pragma comment(lib, "Shcore.lib")
 
@@ -204,6 +206,7 @@ public:
 
     // Modifiers
     void set_title(StringView title) override;
+    void set_icons(const WindowConfig::Icons& icons) override;
     void set_size(i32 width, i32 height) override;
     void set_position(i32 x, i32 y) override;
     void set_min_size(i32 width, i32 height) override;
@@ -211,6 +214,8 @@ public:
     void set_visible(bool visible) override;
     void set_resizable(bool resizable) override;
     void set_decorated(bool decorated) override;
+    void set_show_minimize_button(bool show) override;
+    void set_show_maximize_button(bool show) override;
 
     void minimize() override;
     void maximize() override;
@@ -238,6 +243,8 @@ private:
     void load_cursors();
     DWORD get_window_style() const;
     DWORD get_window_ex_style() const;
+    HICON create_icon(const WindowConfig::Icon& icon) const;
+    void destroy_icons();
 
     HWND hwnd_{nullptr};
     HINSTANCE hinstance_{nullptr};
@@ -255,6 +262,8 @@ private:
     bool should_close_{false};
     bool resizable_{true};
     bool decorated_{true};
+    bool show_minimize_button_{true};
+    bool show_maximize_button_{true};
     WindowState state_{WindowState::Normal};
 
     // For fullscreen restoration
@@ -266,6 +275,8 @@ private:
     HCURSOR cursors_[11]{};
     CursorType current_cursor_{CursorType::Arrow};
     bool cursor_visible_{true};
+    HICON large_icon_{nullptr};
+    HICON small_icon_{nullptr};
 
     static const wchar_t* CLASS_NAME;
     static bool class_registered_;
@@ -282,7 +293,9 @@ Win32Window::Win32Window(const WindowConfig& config)
     , max_width_(config.max_width)
     , max_height_(config.max_height)
     , resizable_(config.resizable)
-    , decorated_(config.decorated) {
+    , decorated_(config.decorated)
+    , show_minimize_button_(config.show_minimize_button)
+    , show_maximize_button_(config.show_maximize_button) {
 
     hinstance_ = GetModuleHandle(nullptr);
 
@@ -347,6 +360,8 @@ Win32Window::Win32Window(const WindowConfig& config)
         return;
     }
 
+    set_icons(config.icons);
+
     // Get actual DPI
     UINT dpi = GetDpiForWindow(hwnd_);
     dpi_scale_ = (config.dpi_scale > 0.0f) ? config.dpi_scale : (static_cast<f32>(dpi) / 96.0f);
@@ -369,6 +384,7 @@ Win32Window::Win32Window(const WindowConfig& config)
 }
 
 Win32Window::~Win32Window() {
+    destroy_icons();
     if (hwnd_) {
         DestroyWindow(hwnd_);
         hwnd_ = nullptr;
@@ -388,7 +404,13 @@ DWORD Win32Window::get_window_style() const {
     if (decorated_) {
         style |= WS_OVERLAPPEDWINDOW;
         if (!resizable_) {
-            style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+            style &= ~WS_THICKFRAME;
+        }
+        if (!show_maximize_button_ || !resizable_) {
+            style &= ~WS_MAXIMIZEBOX;
+        }
+        if (!show_minimize_button_) {
+            style &= ~WS_MINIMIZEBOX;
         }
     } else {
         style |= WS_POPUP;
@@ -716,6 +738,98 @@ void Win32Window::set_title(StringView title) {
     SetWindowTextW(hwnd_, wide.c_str());
 }
 
+HICON Win32Window::create_icon(const WindowConfig::Icon& icon) const {
+    if (!icon.is_valid()) {
+        return nullptr;
+    }
+
+    BITMAPV5HEADER header{};
+    header.bV5Size = sizeof(BITMAPV5HEADER);
+    header.bV5Width = icon.width;
+    header.bV5Height = -icon.height;
+    header.bV5Planes = 1;
+    header.bV5BitCount = 32;
+    header.bV5Compression = BI_BITFIELDS;
+    header.bV5RedMask = 0x00FF0000;
+    header.bV5GreenMask = 0x0000FF00;
+    header.bV5BlueMask = 0x000000FF;
+    header.bV5AlphaMask = 0xFF000000;
+
+    void* bitmap_bits = nullptr;
+    HDC dc = GetDC(nullptr);
+    HBITMAP color_bitmap = CreateDIBSection(
+        dc,
+        reinterpret_cast<BITMAPINFO*>(&header),
+        DIB_RGB_COLORS,
+        &bitmap_bits,
+        nullptr,
+        0
+    );
+    ReleaseDC(nullptr, dc);
+
+    if (!color_bitmap || !bitmap_bits) {
+        if (color_bitmap) {
+            DeleteObject(color_bitmap);
+        }
+        return nullptr;
+    }
+
+    std::vector<u8> bgra(icon.rgba8.size());
+    for (usize i = 0; i < icon.rgba8.size(); i += 4) {
+        bgra[i + 0] = icon.rgba8[i + 2];
+        bgra[i + 1] = icon.rgba8[i + 1];
+        bgra[i + 2] = icon.rgba8[i + 0];
+        bgra[i + 3] = icon.rgba8[i + 3];
+    }
+    std::memcpy(bitmap_bits, bgra.data(), bgra.size());
+
+    HBITMAP mask_bitmap = CreateBitmap(icon.width, icon.height, 1, 1, nullptr);
+    if (!mask_bitmap) {
+        DeleteObject(color_bitmap);
+        return nullptr;
+    }
+
+    ICONINFO icon_info{};
+    icon_info.fIcon = TRUE;
+    icon_info.hbmColor = color_bitmap;
+    icon_info.hbmMask = mask_bitmap;
+
+    HICON created = CreateIconIndirect(&icon_info);
+    DeleteObject(color_bitmap);
+    DeleteObject(mask_bitmap);
+    return created;
+}
+
+void Win32Window::destroy_icons() {
+    HICON large = large_icon_;
+    HICON small = small_icon_;
+    large_icon_ = nullptr;
+    small_icon_ = nullptr;
+
+    if (large) {
+        DestroyIcon(large);
+    }
+    if (small && small != large) {
+        DestroyIcon(small);
+    }
+}
+
+void Win32Window::set_icons(const WindowConfig::Icons& icons) {
+    destroy_icons();
+
+    if (icons.large.has_value()) {
+        large_icon_ = create_icon(*icons.large);
+    }
+    if (icons.small.has_value()) {
+        small_icon_ = create_icon(*icons.small);
+    } else {
+        small_icon_ = large_icon_;
+    }
+
+    SendMessage(hwnd_, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(large_icon_));
+    SendMessage(hwnd_, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(small_icon_));
+}
+
 void Win32Window::set_size(i32 width, i32 height) {
     RECT rect = {0, 0, width, height};
     DWORD style = get_window_style();
@@ -752,6 +866,16 @@ void Win32Window::set_resizable(bool resizable) {
 
 void Win32Window::set_decorated(bool decorated) {
     decorated_ = decorated;
+    update_window_style();
+}
+
+void Win32Window::set_show_minimize_button(bool show) {
+    show_minimize_button_ = show;
+    update_window_style();
+}
+
+void Win32Window::set_show_maximize_button(bool show) {
+    show_maximize_button_ = show;
     update_window_style();
 }
 

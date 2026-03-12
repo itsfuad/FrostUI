@@ -11,6 +11,7 @@
 #include <X11/XKBlib.h>
 #include <cstring>
 #include <cstdlib>
+#include <vector>
 #include <sys/select.h>
 #include <unistd.h>
 
@@ -176,6 +177,7 @@ public:
 
     // Modifiers
     void set_title(StringView title) override;
+    void set_icons(const WindowConfig::Icons& icons) override;
     void set_size(i32 width, i32 height) override;
     void set_position(i32 x, i32 y) override;
     void set_min_size(i32 width, i32 height) override;
@@ -183,6 +185,8 @@ public:
     void set_visible(bool visible) override;
     void set_resizable(bool resizable) override;
     void set_decorated(bool decorated) override;
+    void set_show_minimize_button(bool show) override;
+    void set_show_maximize_button(bool show) override;
 
     void minimize() override;
     void maximize() override;
@@ -225,6 +229,9 @@ private:
     Atom wm_state_maximized_horz_{0};
     Atom wm_state_fullscreen_{0};
     Atom net_wm_state_{0};
+    Atom net_wm_name_{0};
+    Atom utf8_string_{0};
+    Atom net_wm_icon_{0};
     Atom motif_wm_hints_{0};
 
     i32 width_{0};
@@ -240,6 +247,8 @@ private:
     bool should_close_{false};
     bool resizable_{true};
     bool visible_{false};
+    bool show_minimize_button_{true};
+    bool show_maximize_button_{true};
     WindowState state_{WindowState::Normal};
 
     InputState input_state_;
@@ -255,7 +264,9 @@ X11Window::X11Window(const WindowConfig& config)
     , min_height_(config.min_height)
     , max_width_(config.max_width)
     , max_height_(config.max_height)
-    , resizable_(config.resizable) {
+    , resizable_(config.resizable)
+    , show_minimize_button_(config.show_minimize_button)
+    , show_maximize_button_(config.show_maximize_button) {
 
     // Open display connection
     display_ = XOpenDisplay(nullptr);
@@ -303,12 +314,16 @@ X11Window::X11Window(const WindowConfig& config)
     wm_state_maximized_vert_ = XInternAtom(display_, "_NET_WM_STATE_MAXIMIZED_VERT", False);
     wm_state_maximized_horz_ = XInternAtom(display_, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
     wm_state_fullscreen_ = XInternAtom(display_, "_NET_WM_STATE_FULLSCREEN", False);
+    net_wm_name_ = XInternAtom(display_, "_NET_WM_NAME", False);
+    utf8_string_ = XInternAtom(display_, "UTF8_STRING", False);
+    net_wm_icon_ = XInternAtom(display_, "_NET_WM_ICON", False);
     motif_wm_hints_ = XInternAtom(display_, "_MOTIF_WM_HINTS", False);
 
     XSetWMProtocols(display_, window_, &wm_delete_window_, 1);
 
     // Set window title
     set_title(config.title);
+    set_icons(config.icons);
 
     // Set size hints
     update_size_hints();
@@ -412,7 +427,67 @@ void X11Window::destroy_cursors() {
 }
 
 void X11Window::set_title(StringView title) {
-    XStoreName(display_, window_, String(title).c_str());
+    const String owned_title(title);
+    XStoreName(display_, window_, owned_title.c_str());
+    XChangeProperty(
+        display_,
+        window_,
+        net_wm_name_,
+        utf8_string_,
+        8,
+        PropModeReplace,
+        reinterpret_cast<const unsigned char*>(owned_title.data()),
+        static_cast<int>(owned_title.size())
+    );
+    XFlush(display_);
+}
+
+void X11Window::set_icons(const WindowConfig::Icons& icons) {
+    std::vector<unsigned long> data;
+
+    auto append_icon = [&](const WindowConfig::Icon& icon) {
+        if (!icon.is_valid()) {
+            return;
+        }
+
+        data.push_back(static_cast<unsigned long>(icon.width));
+        data.push_back(static_cast<unsigned long>(icon.height));
+
+        for (usize i = 0; i < icon.rgba8.size(); i += 4) {
+            const u8 r = icon.rgba8[i + 0];
+            const u8 g = icon.rgba8[i + 1];
+            const u8 b = icon.rgba8[i + 2];
+            const u8 a = icon.rgba8[i + 3];
+            const u32 argb = (static_cast<u32>(a) << 24) |
+                             (static_cast<u32>(r) << 16) |
+                             (static_cast<u32>(g) << 8) |
+                             static_cast<u32>(b);
+            data.push_back(static_cast<unsigned long>(argb));
+        }
+    };
+
+    if (icons.large.has_value()) {
+        append_icon(*icons.large);
+    }
+    if (icons.small.has_value()) {
+        append_icon(*icons.small);
+    }
+
+    if (data.empty()) {
+        XDeleteProperty(display_, window_, net_wm_icon_);
+    } else {
+        XChangeProperty(
+            display_,
+            window_,
+            net_wm_icon_,
+            XA_CARDINAL,
+            32,
+            PropModeReplace,
+            reinterpret_cast<const unsigned char*>(data.data()),
+            static_cast<int>(data.size())
+        );
+    }
+
     XFlush(display_);
 }
 
@@ -498,6 +573,18 @@ void X11Window::set_decorated(bool decorated) {
 
     XChangeProperty(display_, window_, motif_wm_hints_, motif_wm_hints_, 32,
                     PropModeReplace, reinterpret_cast<unsigned char*>(&hints), 5);
+    XFlush(display_);
+}
+
+void X11Window::set_show_minimize_button(bool show) {
+    show_minimize_button_ = show;
+    // Most X11 window managers do not expose reliable per-button control here.
+    XFlush(display_);
+}
+
+void X11Window::set_show_maximize_button(bool show) {
+    show_maximize_button_ = show;
+    // Most X11 window managers do not expose reliable per-button control here.
     XFlush(display_);
 }
 
