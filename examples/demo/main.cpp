@@ -16,6 +16,8 @@ int main() {
     config.window.title = "FrostUI Demo";
     config.window.width = 800;
     config.window.height = 600;
+    config.renderer_backend = RendererBackend::Gpu;
+    config.allow_software_fallback = true;
 
     auto app_result = Application::create(config);
     if (!app_result) {

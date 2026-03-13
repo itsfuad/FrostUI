@@ -33,6 +33,7 @@ Current limitations worth knowing up front:
 - no built-in list, table, image, menu, or scroll container
 - text measurement is approximate in some widgets
 - default rendering path is software rendering; Vulkan is optional and conditional
+- runtime renderer selection is available through `ApplicationConfig::renderer_backend`
 
 Font support notes:
 
@@ -71,6 +72,13 @@ sudo pacman -S vulkan-devel
 
 # Fedora
 sudo dnf install vulkan-devel
+```
+
+Build with GPU backend support:
+
+```bash
+cmake -B build -DFROST_USE_VULKAN=ON
+cmake --build build
 ```
 
 ## Build And Run
@@ -132,6 +140,8 @@ config.window.width = 800;
 config.window.height = 600;
 config.window.show_minimize_button = true;
 config.window.show_maximize_button = false;
+config.renderer_backend = RendererBackend::Gpu;
+config.allow_software_fallback = true;
 
 auto app_result = Application::create(config);
 if (!app_result) {
@@ -140,6 +150,12 @@ if (!app_result) {
 
 auto& app = *app_result.value();
 ```
+
+Renderer selection behavior:
+
+- `RendererBackend::Software` is always available
+- `RendererBackend::Gpu` is available only when built with `-DFROST_USE_VULKAN=ON`
+- when GPU is requested but unavailable and `allow_software_fallback` is `true`, app falls back to software
 
 ### 2.1 Optional: Set Window Icons
 

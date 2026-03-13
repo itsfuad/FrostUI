@@ -21,6 +21,7 @@ add_executable(frost_ui_tests
     ui/test_widget.cpp
     ui/test_layout.cpp
     ui/test_controls.cpp
+    ui/test_renderer_backend.cpp
 )
 
 target_link_libraries(frost_ui_tests

@@ -139,6 +139,7 @@ else()
         src/graphics/renderer.cpp
         src/graphics/software_renderer.cpp
         src/graphics/font.cpp
+        src/graphics/vulkan/vk_renderer.cpp
         src/graphics/bitmap_font.cpp
     )
 

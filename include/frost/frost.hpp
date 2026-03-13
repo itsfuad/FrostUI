@@ -22,6 +22,7 @@
 #include "frost/graphics/color.hpp"
 #include "frost/graphics/draw_list.hpp"
 #include "frost/graphics/font.hpp"
+#include "frost/graphics/renderer.hpp"
 
 // UI
 #include "frost/ui/widget.hpp"

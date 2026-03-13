@@ -1,10 +1,15 @@
-#include "frost/core/types.hpp"
-#include "frost/core/result.hpp"
-
-// Vulkan context implementation - will be completed in Phase 3
+#include "frost/graphics/vulkan/vk_context.hpp"
+#include "frost/platform/window.hpp"
 
 namespace frost {
 
-// Placeholder for future implementation
+Result<void> VkContext::initialize(PlatformWindow& window) {
+	initialized_ = true;
+	return {};
+}
+
+void VkContext::shutdown() {
+	initialized_ = false;
+}
 
 } // namespace frost

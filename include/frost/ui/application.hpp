@@ -4,7 +4,9 @@
 #include "frost/core/result.hpp"
 #include "frost/platform/window.hpp"
 #include "frost/graphics/draw_list.hpp"
+#include "frost/graphics/renderer.hpp"
 #include "frost/graphics/software_renderer.hpp"
+#include "frost/graphics/vulkan/vk_renderer.hpp"
 #include "frost/ui/widget.hpp"
 
 namespace frost {
@@ -14,6 +16,8 @@ struct ApplicationConfig {
     WindowConfig window;
     bool vsync{true};
     f32 target_fps{60.0f};
+    RendererBackend renderer_backend{RendererBackend::Software};
+    bool allow_software_fallback{true};
 };
 
 /// Main application class that manages the window and UI
@@ -68,6 +72,7 @@ public:
 
     /// Get frame delta time
     [[nodiscard]] f64 delta_time() const { return delta_time_; }
+    [[nodiscard]] RendererBackend active_renderer_backend() const { return renderer_backend_; }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Fonts
@@ -96,6 +101,7 @@ private:
     Unique<Widget> root_;
     DrawList draw_list_;
     SoftwareRenderer renderer_;
+    VkRenderer vk_renderer_;
 
     Widget* focused_widget_{nullptr};
     Widget* hovered_widget_{nullptr};
@@ -105,6 +111,7 @@ private:
     f64 last_frame_time_{0.0};
     f64 delta_time_{0.0};
     f32 target_fps_{60.0f};
+    RendererBackend renderer_backend_{RendererBackend::Software};
 };
 
 } // namespace frost

@@ -1,10 +1,31 @@
-#include "frost/core/types.hpp"
-#include "frost/core/result.hpp"
-
-// Renderer implementation - will be completed in Phase 5
+#include "frost/graphics/renderer.hpp"
 
 namespace frost {
 
-// Placeholder for future implementation
+bool is_renderer_backend_available(RendererBackend backend) {
+	switch (backend) {
+		case RendererBackend::Software:
+			return true;
+		case RendererBackend::Gpu:
+#ifdef FROST_NO_VULKAN
+			return false;
+#else
+			return true;
+#endif
+	}
+
+	return false;
+}
+
+StringView renderer_backend_name(RendererBackend backend) {
+	switch (backend) {
+		case RendererBackend::Software:
+			return "software";
+		case RendererBackend::Gpu:
+			return "gpu";
+	}
+
+	return "unknown";
+}
 
 } // namespace frost

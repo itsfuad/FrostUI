@@ -1,10 +1,14 @@
-#include "frost/core/types.hpp"
-#include "frost/core/result.hpp"
-
-// Vulkan pipeline implementation - will be completed in Phase 4
+#include "frost/graphics/vulkan/vk_pipeline.hpp"
 
 namespace frost {
 
-// Placeholder for future implementation
+Result<void> VkPipelineState::initialize() {
+	initialized_ = true;
+	return {};
+}
+
+void VkPipelineState::shutdown() {
+	initialized_ = false;
+}
 
 } // namespace frost

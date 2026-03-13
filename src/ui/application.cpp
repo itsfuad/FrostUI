@@ -8,6 +8,18 @@ Application::~Application() = default;
 Result<Unique<Application>> Application::create(const ApplicationConfig& config) {
     auto app = Unique<Application>(new Application());
 
+    app->renderer_backend_ = config.renderer_backend;
+    if (!is_renderer_backend_available(app->renderer_backend_)) {
+        if (config.allow_software_fallback) {
+            app->renderer_backend_ = RendererBackend::Software;
+        } else {
+            return Error{
+                ErrorCode::NotSupported,
+                "Requested renderer backend is not available in this build"
+            };
+        }
+    }
+
     // Create window
     auto window_result = PlatformWindow::create(config.window);
     if (!window_result) {
@@ -15,6 +27,17 @@ Result<Unique<Application>> Application::create(const ApplicationConfig& config)
     }
     app->window_ = std::move(window_result.value());
     app->target_fps_ = config.target_fps;
+
+    if (app->renderer_backend_ == RendererBackend::Gpu) {
+        auto init_result = app->vk_renderer_.initialize(*app->window_);
+        if (!init_result) {
+            if (config.allow_software_fallback) {
+                app->renderer_backend_ = RendererBackend::Software;
+            } else {
+                return init_result.error();
+            }
+        }
+    }
 
     // Connect window event handlers
     app->window_->on_mouse_move.connect([&app = *app](f64 x, f64 y) {
@@ -135,8 +158,21 @@ void Application::render() {
     i32 height = static_cast<i32>(size.height);
 
     if (width > 0 && height > 0) {
-        const u8* pixels = renderer_.render(draw_list_, width, height);
-        window_->present_pixels(pixels, width, height);
+        switch (renderer_backend_) {
+            case RendererBackend::Software: {
+                const u8* pixels = renderer_.render(draw_list_, width, height);
+                window_->present_pixels(pixels, width, height);
+                break;
+            }
+            case RendererBackend::Gpu: {
+                auto gpu_result = vk_renderer_.render(draw_list_, width, height);
+                if (!gpu_result) {
+                    const u8* pixels = renderer_.render(draw_list_, width, height);
+                    window_->present_pixels(pixels, width, height);
+                }
+                break;
+            }
+        }
     }
 }
 
