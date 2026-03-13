@@ -5,6 +5,26 @@
 include(FetchContent)
 
 # ─────────────────────────────────────────────────────────────────────────────
+# FreeType (optional - enables TTF/OTF loading)
+# ─────────────────────────────────────────────────────────────────────────────
+
+option(FROST_USE_FREETYPE "Enable TTF/OTF font loading via FreeType" ON)
+
+if(FROST_USE_FREETYPE)
+    find_package(Freetype)
+    if(Freetype_FOUND)
+        message(STATUS "Found FreeType: ${FREETYPE_INCLUDE_DIRS}")
+        set(FROST_HAS_FREETYPE TRUE CACHE INTERNAL "")
+    else()
+        message(WARNING "FreeType not found - TTF/OTF font loading will be disabled")
+        set(FROST_HAS_FREETYPE FALSE CACHE INTERNAL "")
+    endif()
+else()
+    message(STATUS "FreeType disabled - TTF/OTF font loading will be disabled")
+    set(FROST_HAS_FREETYPE FALSE CACHE INTERNAL "")
+endif()
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Vulkan SDK (optional - user can enable with FROST_USE_VULKAN)
 # ─────────────────────────────────────────────────────────────────────────────
 

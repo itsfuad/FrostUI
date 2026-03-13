@@ -14,8 +14,8 @@ void SoftwareRenderer::reset_font() {
     font_ = Font::make_default();
 }
 
-Result<void> SoftwareRenderer::load_font_from_file(StringView file_path) {
-    auto font_result = Font::load_from_file(file_path);
+Result<void> SoftwareRenderer::load_font_from_file(StringView file_path, i32 pixel_height) {
+    auto font_result = Font::load_from_file(file_path, pixel_height);
     if (!font_result) {
         return font_result.error();
     }
@@ -220,10 +220,9 @@ void SoftwareRenderer::draw_text(Point2D pos, StringView text, Color color, f32 
         return;
     }
 
-    // Calculate scale factor from font size
-    f32 scale = size / static_cast<f32>(font_.glyph_height());
-    f32 char_width = font_.char_width_for_size(size);
-    f32 char_height = font_.line_height_for_size(size);
+    const f32 scale       = size / static_cast<f32>(font_.glyph_height());
+    const f32 char_height = font_.line_height_for_size(size);
+    const bool use_alpha  = font_.has_alpha_data();
 
     f32 x = pos.x;
     f32 y = pos.y;
@@ -235,26 +234,69 @@ void SoftwareRenderer::draw_text(Point2D pos, StringView text, Color color, f32 
             continue;
         }
 
-        // Render each pixel of the glyph
-        for (i32 gy = 0; gy < font_.glyph_height(); ++gy) {
-            for (i32 gx = 0; gx < font_.glyph_width(); ++gx) {
-                if (font_.get_pixel(c, gx, gy)) {
-                    // Calculate screen position with scaling
-                    i32 sx = static_cast<i32>(x + gx * scale);
-                    i32 sy = static_cast<i32>(y + gy * scale);
+        const i32 advance_px = font_.glyph_advance_x(c);
 
-                    // For larger sizes, fill a scaled pixel
-                    i32 w = static_cast<i32>(scale + 0.5f);
-                    if (w < 1) w = 1;
+        if (use_alpha) {
+            // Anti-aliased FreeType path.
+            // Uses a box filter: for each output pixel, accumulate the average alpha
+            // of all source texels that fall within its footprint. This eliminates
+            // gaps at any scale (down or up) and correctly blends thin strokes.
+            // A sqrt gamma lift is applied so thin strokes stay visible on dark backgrounds.
+            const i32 out_w = std::max(1, static_cast<i32>(static_cast<f32>(advance_px) * scale + 0.5f));
+            const i32 out_h = std::max(1, static_cast<i32>(static_cast<f32>(font_.glyph_height()) * scale + 0.5f));
+            const f32 inv_scale = 1.0f / scale;
+            for (i32 oy = 0; oy < out_h; ++oy) {
+                for (i32 ox = 0; ox < out_w; ++ox) {
+                    // Source footprint for this output pixel.
+                    const f32 sx0 = static_cast<f32>(ox)     * inv_scale;
+                    const f32 sx1 = static_cast<f32>(ox + 1) * inv_scale;
+                    const f32 sy0 = static_cast<f32>(oy)     * inv_scale;
+                    const f32 sy1 = static_cast<f32>(oy + 1) * inv_scale;
 
+                    const i32 x0 = static_cast<i32>(sx0);
+                    const i32 x1 = std::min(static_cast<i32>(sx1) + 1, font_.glyph_width());
+                    const i32 y0 = static_cast<i32>(sy0);
+                    const i32 y1 = std::min(static_cast<i32>(sy1) + 1, font_.glyph_height());
+
+                    f32 sum = 0.0f;
+                    i32 count = 0;
+                    for (i32 sby = y0; sby < y1; ++sby) {
+                        for (i32 sbx = x0; sbx < x1; ++sbx) {
+                            sum += static_cast<f32>(font_.get_alpha(c, sbx, sby));
+                            ++count;
+                        }
+                    }
+                    if (count == 0 || sum == 0.0f) { continue; }
+
+                    // Box-filter average alpha, then apply sqrt gamma to boost
+                    // visibility of thin strokes (FreeType thin-stroke alphas are low).
+                    const f32 avg = sum / (static_cast<f32>(count) * 255.0f);
+                    const f32 gamma_alpha = std::sqrt(avg); // lift: 0.1 -> 0.32, 0.5 -> 0.71
+
+                    const i32 dsx = static_cast<i32>(x) + ox;
+                    const i32 dsy = static_cast<i32>(y) + oy;
+                    if (dsx >= static_cast<i32>(clip.x) && dsx < static_cast<i32>(clip.x + clip.width) &&
+                        dsy >= static_cast<i32>(clip.y) && dsy < static_cast<i32>(clip.y + clip.height)) {
+                        Color blended = color;
+                        blended.a = color.a * gamma_alpha;
+                        blend_pixel(dsx, dsy, blended);
+                    }
+                }
+            }
+        } else {
+            // Binary PSF path with block-expand scaling.
+            for (i32 gy = 0; gy < font_.glyph_height(); ++gy) {
+                for (i32 gx = 0; gx < font_.glyph_width(); ++gx) {
+                    if (!font_.get_pixel(c, gx, gy)) { continue; }
+                    const i32 sx = static_cast<i32>(x + static_cast<f32>(gx) * scale);
+                    const i32 sy = static_cast<i32>(y + static_cast<f32>(gy) * scale);
+                    const i32 w  = std::max(1, static_cast<i32>(scale + 0.5f));
                     for (i32 dy = 0; dy < w; ++dy) {
                         for (i32 dx = 0; dx < w; ++dx) {
-                            i32 px = sx + dx;
-                            i32 py = sy + dy;
-
-                            // Clip check
-                            if (px >= clip.x && px < clip.x + clip.width &&
-                                py >= clip.y && py < clip.y + clip.height) {
+                            const i32 px = sx + dx;
+                            const i32 py = sy + dy;
+                            if (px >= static_cast<i32>(clip.x) && px < static_cast<i32>(clip.x + clip.width) &&
+                                py >= static_cast<i32>(clip.y) && py < static_cast<i32>(clip.y + clip.height)) {
                                 blend_pixel(px, py, color);
                             }
                         }
@@ -263,7 +305,7 @@ void SoftwareRenderer::draw_text(Point2D pos, StringView text, Color color, f32 
             }
         }
 
-        x += char_width;
+        x += static_cast<f32>(advance_px) * scale;
     }
 }
 

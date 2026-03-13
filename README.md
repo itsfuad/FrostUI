@@ -38,7 +38,9 @@ Current limitations worth knowing up front:
 Font support notes:
 
 - software renderer uses an embedded default bitmap font
-- optional custom bitmap fonts can be loaded from `.psf` files (PSF1/PSF2) via `Application::load_font_from_file(...)`
+- optional custom fonts can be loaded via `Application::load_font_from_file(...)`
+    - `.psf` (PSF1/PSF2) works without extra dependencies
+    - `.ttf` / `.otf` require FreeType support (`-DFROST_USE_FREETYPE=ON` and FreeType installed)
 - fallback glyphs use `?` when a character is not present
 
 ## Requirements
@@ -74,10 +76,30 @@ sudo pacman -S vulkan-devel
 sudo dnf install vulkan-devel
 ```
 
+Optional FreeType packages (for `.ttf` / `.otf` loading):
+
+```bash
+# Ubuntu / Debian
+sudo apt install libfreetype6-dev
+
+# Arch
+sudo pacman -S freetype2
+
+# Fedora
+sudo dnf install freetype-devel
+```
+
 Build with GPU backend support:
 
 ```bash
 cmake -B build -DFROST_USE_VULKAN=ON
+cmake --build build
+```
+
+Build with TTF/OTF font loading support:
+
+```bash
+cmake -B build -DFROST_USE_FREETYPE=ON
 cmake --build build
 ```
 
@@ -99,12 +121,14 @@ screenshots
 
 ```bash
 ./build/bin/frost_demo
+./build/bin/frost_font_showcase
 ./build/bin/frost_calculator
 ./build/bin/frost_unit_converter
 ```
 
 ```powershell
 .\build\bin\Release\frost_demo.exe
+.\build\bin\Release\frost_font_showcase.exe
 .\build\bin\Release\frost_calculator.exe
 .\build\bin\Release\frost_unit_converter.exe
 ```

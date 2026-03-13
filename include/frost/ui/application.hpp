@@ -78,8 +78,9 @@ public:
     // Fonts
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// Load a custom bitmap font (PSF1/PSF2) for software text rendering.
-    [[nodiscard]] Result<void> load_font_from_file(StringView file_path);
+    /// Load a custom font (PSF1/PSF2, or TTF/OTF when FreeType is available).
+    /// pixel_height controls the rasterization size for TTF/OTF fonts.
+    [[nodiscard]] Result<void> load_font_from_file(StringView file_path, i32 pixel_height = 16);
 
     /// Revert software text rendering back to the built-in default font.
     void reset_font();

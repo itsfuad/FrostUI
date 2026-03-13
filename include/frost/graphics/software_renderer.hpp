@@ -19,7 +19,7 @@ public:
     void reset_font();
 
     /// Load and activate a custom font (PSF1/PSF2).
-    [[nodiscard]] Result<void> load_font_from_file(StringView file_path);
+    [[nodiscard]] Result<void> load_font_from_file(StringView file_path, i32 pixel_height = 16);
 
     [[nodiscard]] const Font& font() const { return font_; }
 

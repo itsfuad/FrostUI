@@ -107,6 +107,9 @@ if(FROST_HAS_VULKAN)
     add_library(frost_graphics STATIC
         src/graphics/draw_list.cpp
         src/graphics/renderer.cpp
+        src/graphics/software_renderer.cpp
+        src/graphics/font.cpp
+        src/graphics/bitmap_font.cpp
         src/graphics/vulkan/vk_context.cpp
         src/graphics/vulkan/vk_swapchain.cpp
         src/graphics/vulkan/vk_pipeline.cpp
@@ -128,6 +131,11 @@ if(FROST_HAS_VULKAN)
             Vulkan::Vulkan
             GPUOpen::VulkanMemoryAllocator
     )
+
+    if(FROST_HAS_FREETYPE)
+        target_link_libraries(frost_graphics PUBLIC Freetype::Freetype)
+        target_compile_definitions(frost_graphics PUBLIC FROST_HAS_FREETYPE=1)
+    endif()
 
     if(FROST_ENABLE_VALIDATION)
         target_compile_definitions(frost_graphics PRIVATE FROST_VULKAN_VALIDATION=1)
@@ -155,6 +163,11 @@ else()
             frost_core
             frost_platform
     )
+
+    if(FROST_HAS_FREETYPE)
+        target_link_libraries(frost_graphics PUBLIC Freetype::Freetype)
+        target_compile_definitions(frost_graphics PUBLIC FROST_HAS_FREETYPE=1)
+    endif()
 
     target_compile_definitions(frost_graphics PUBLIC FROST_NO_VULKAN=1)
 endif()

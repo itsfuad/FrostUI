@@ -109,8 +109,8 @@ void Application::set_root(Unique<Widget> root) {
     }
 }
 
-Result<void> Application::load_font_from_file(StringView file_path) {
-    return renderer_.load_font_from_file(file_path);
+Result<void> Application::load_font_from_file(StringView file_path, i32 pixel_height) {
+    return renderer_.load_font_from_file(file_path, pixel_height);
 }
 
 void Application::reset_font() {

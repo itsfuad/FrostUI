@@ -9,6 +9,8 @@ class PlatformWindow;
 
 class VkRenderer {
 public:
+    struct Impl;
+
     VkRenderer();
     ~VkRenderer();
 
@@ -19,7 +21,6 @@ public:
     [[nodiscard]] bool is_initialized() const;
 
 private:
-    struct Impl;
     Unique<Impl> impl_;
 };
 
