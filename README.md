@@ -76,6 +76,12 @@ ctest --test-dir build
 
 Example executables:
 
+screenshots
+
+![Demo app] (./demo.png)
+![Calculator app] (./calc.png)
+![Unit converter app] (./conv.png)
+
 ```bash
 ./build/bin/frost_demo
 ./build/bin/frost_calculator
