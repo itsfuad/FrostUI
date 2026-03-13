@@ -138,6 +138,7 @@ else()
         src/graphics/draw_list.cpp
         src/graphics/renderer.cpp
         src/graphics/software_renderer.cpp
+        src/graphics/font.cpp
         src/graphics/bitmap_font.cpp
     )
 
@@ -168,6 +169,9 @@ add_library(frost_ui STATIC
     src/ui/widgets/label.cpp
     src/ui/widgets/button.cpp
     src/ui/widgets/text_input.cpp
+    src/ui/widgets/checkbox.cpp
+    src/ui/widgets/radio_button.cpp
+    src/ui/widgets/slider.cpp
 )
 
 target_include_directories(frost_ui

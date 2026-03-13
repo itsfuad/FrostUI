@@ -86,6 +86,14 @@ void Application::set_root(Unique<Widget> root) {
     }
 }
 
+Result<void> Application::load_font_from_file(StringView file_path) {
+    return renderer_.load_font_from_file(file_path);
+}
+
+void Application::reset_font() {
+    renderer_.reset_font();
+}
+
 void Application::set_focused_widget(Widget* widget) {
     if (focused_widget_ != widget) {
         if (focused_widget_) {

@@ -4,6 +4,26 @@
 
 namespace frost {
 
+void SoftwareRenderer::set_font(Font font) {
+    if (font.valid()) {
+        font_ = std::move(font);
+    }
+}
+
+void SoftwareRenderer::reset_font() {
+    font_ = Font::make_default();
+}
+
+Result<void> SoftwareRenderer::load_font_from_file(StringView file_path) {
+    auto font_result = Font::load_from_file(file_path);
+    if (!font_result) {
+        return font_result.error();
+    }
+
+    set_font(std::move(font_result.value()));
+    return {};
+}
+
 const u8* SoftwareRenderer::render(const DrawList& draw_list, i32 width, i32 height) {
     // Resize buffer if needed
     if (width != width_ || height != height_) {
@@ -196,10 +216,14 @@ void SoftwareRenderer::draw_rect_outline(const Rect& rect, Color color, f32 thic
 }
 
 void SoftwareRenderer::draw_text(Point2D pos, StringView text, Color color, f32 size, const Rect& clip) {
+    if (!font_.valid()) {
+        return;
+    }
+
     // Calculate scale factor from font size
-    f32 scale = size / static_cast<f32>(BitmapFont::GLYPH_HEIGHT);
-    f32 char_width = BitmapFont::GLYPH_WIDTH * scale;
-    f32 char_height = BitmapFont::GLYPH_HEIGHT * scale;
+    f32 scale = size / static_cast<f32>(font_.glyph_height());
+    f32 char_width = font_.char_width_for_size(size);
+    f32 char_height = font_.line_height_for_size(size);
 
     f32 x = pos.x;
     f32 y = pos.y;
@@ -212,9 +236,9 @@ void SoftwareRenderer::draw_text(Point2D pos, StringView text, Color color, f32 
         }
 
         // Render each pixel of the glyph
-        for (i32 gy = 0; gy < BitmapFont::GLYPH_HEIGHT; ++gy) {
-            for (i32 gx = 0; gx < BitmapFont::GLYPH_WIDTH; ++gx) {
-                if (BitmapFont::get_pixel(c, gx, gy)) {
+        for (i32 gy = 0; gy < font_.glyph_height(); ++gy) {
+            for (i32 gx = 0; gx < font_.glyph_width(); ++gx) {
+                if (font_.get_pixel(c, gx, gy)) {
                     // Calculate screen position with scaling
                     i32 sx = static_cast<i32>(x + gx * scale);
                     i32 sy = static_cast<i32>(y + gy * scale);

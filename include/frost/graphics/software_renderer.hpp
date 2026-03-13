@@ -1,8 +1,9 @@
 #pragma once
 
 #include "frost/core/types.hpp"
+#include "frost/core/result.hpp"
 #include "frost/graphics/draw_list.hpp"
-#include "frost/graphics/bitmap_font.hpp"
+#include "frost/graphics/font.hpp"
 
 namespace frost {
 
@@ -10,6 +11,17 @@ namespace frost {
 class SoftwareRenderer {
 public:
     SoftwareRenderer() = default;
+
+    /// Set active font used by text rendering.
+    void set_font(Font font);
+
+    /// Reset active font back to the embedded default font.
+    void reset_font();
+
+    /// Load and activate a custom font (PSF1/PSF2).
+    [[nodiscard]] Result<void> load_font_from_file(StringView file_path);
+
+    [[nodiscard]] const Font& font() const { return font_; }
 
     /// Render the draw list to the internal pixel buffer
     /// Returns pointer to RGBA8 pixel data
@@ -34,6 +46,7 @@ private:
     Vector<u8> pixels_;
     i32 width_{0};
     i32 height_{0};
+    Font font_{Font::make_default()};
 };
 
 } // namespace frost

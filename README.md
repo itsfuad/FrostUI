@@ -14,6 +14,7 @@ Public API available from [`include/frost/frost.hpp`](/home/fuad/Dev/FrostUI/inc
 - `Label` for text display
 - `Button` with `on_click`
 - `TextInput` for single-line text entry with `on_text_changed` and `on_submit`
+- `Checkbox`, `RadioButton`, and `Slider`
 - `PlatformWindow` and platform initialization helpers
 - Core utility types such as `Result<T>`, `Signal`, geometry structs, and colors
 
@@ -26,12 +27,18 @@ Current layout controls:
 
 Current limitations worth knowing up front:
 
-- only three built-in widgets: `Label`, `Button`, `TextInput`
+- widget catalog is still intentionally compact
 - `TextInput` is single-line only
 - `ContainerStyle.wrap` exists but is marked TODO and is not implemented
-- no built-in list, table, checkbox, radio, slider, image, menu, or scroll container
+- no built-in list, table, image, menu, or scroll container
 - text measurement is approximate in some widgets
 - default rendering path is software rendering; Vulkan is optional and conditional
+
+Font support notes:
+
+- software renderer uses an embedded default bitmap font
+- optional custom bitmap fonts can be loaded from `.psf` files (PSF1/PSF2) via `Application::load_font_from_file(...)`
+- fallback glyphs use `?` when a character is not present
 
 ## Requirements
 
@@ -309,6 +316,48 @@ input->on_text_changed.connect([](const String& text) {
 input->on_submit.connect([](const String& text) {
     // react to Enter
 });
+```
+
+### `Checkbox`
+
+```cpp
+auto checkbox = Checkbox::create("Enable feature");
+checkbox->on_toggled.connect([](bool checked) {
+    // checked changed
+});
+```
+
+### `RadioButton`
+
+```cpp
+auto low = RadioButton::create("Low", "quality");
+auto high = RadioButton::create("High", "quality");
+high->set_selected(true);
+```
+
+### `Slider`
+
+```cpp
+auto slider = Slider::create(0.0f, 100.0f, 50.0f);
+slider->set_step(1.0f);
+slider->on_value_changed.connect([](f32 value) {
+    // value changed
+});
+```
+
+## Custom Fonts
+
+Load a PSF bitmap font for software-rendered text:
+
+```cpp
+auto load_result = app.load_font_from_file("/path/to/my-font.psf");
+if (!load_result) {
+    std::cerr << load_result.error().message << "\n";
+}
+
+// Revert to embedded default font
+app.reset_font();
+```
 ```
 
 ## Example UIs Included In This Repo

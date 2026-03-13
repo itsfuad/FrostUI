@@ -21,6 +21,7 @@
 // Graphics
 #include "frost/graphics/color.hpp"
 #include "frost/graphics/draw_list.hpp"
+#include "frost/graphics/font.hpp"
 
 // UI
 #include "frost/ui/widget.hpp"
@@ -29,3 +30,6 @@
 #include "frost/ui/widgets/label.hpp"
 #include "frost/ui/widgets/button.hpp"
 #include "frost/ui/widgets/text_input.hpp"
+#include "frost/ui/widgets/checkbox.hpp"
+#include "frost/ui/widgets/radio_button.hpp"
+#include "frost/ui/widgets/slider.hpp"

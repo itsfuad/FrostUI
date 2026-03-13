@@ -20,6 +20,7 @@ target_link_libraries(frost_core_tests
 add_executable(frost_ui_tests
     ui/test_widget.cpp
     ui/test_layout.cpp
+    ui/test_controls.cpp
 )
 
 target_link_libraries(frost_ui_tests

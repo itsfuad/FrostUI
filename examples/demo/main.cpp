@@ -25,6 +25,9 @@ int main() {
 
     auto& app = *app_result.value();
 
+    // Optional custom font loading (PSF1/PSF2)
+    // app.load_font_from_file("/path/to/font.psf");
+
     // Build UI
     auto root = VBox(16.0f);
     root->set_padding(Edges{20.0f, 20.0f, 20.0f, 20.0f});
@@ -109,6 +112,65 @@ int main() {
     input_section->add_child(std::move(greeting_label));
 
     root->add_child(std::move(input_section));
+
+    // New controls section
+    auto controls_section = VBox(8.0f);
+
+    auto controls_title = Label::create("Controls");
+    LabelStyle controls_title_style;
+    controls_title_style.font_size = 18.0f;
+    controls_title->set_style(controls_title_style);
+    controls_section->add_child(std::move(controls_title));
+
+    auto feature_checkbox = Checkbox::create("Enable advanced mode");
+    auto controls_status = Label::create("Advanced mode: off");
+    auto* controls_status_ptr = controls_status.get();
+    feature_checkbox->on_toggled.connect([controls_status_ptr](bool checked) {
+        controls_status_ptr->set_text(checked ? "Advanced mode: on" : "Advanced mode: off");
+    });
+    controls_section->add_child(std::move(feature_checkbox));
+
+    auto quality_row = HBox(10.0f);
+    auto quality_label = Label::create("Quality:");
+    auto quality_value = Label::create("Balanced");
+    auto* quality_value_ptr = quality_value.get();
+
+    auto quality_low = RadioButton::create("Low", "quality");
+    auto quality_balanced = RadioButton::create("Balanced", "quality");
+    auto quality_high = RadioButton::create("High", "quality");
+    quality_balanced->set_selected(true);
+
+    quality_low->on_selected.connect([quality_value_ptr](bool selected) {
+        if (selected) quality_value_ptr->set_text("Low");
+    });
+    quality_balanced->on_selected.connect([quality_value_ptr](bool selected) {
+        if (selected) quality_value_ptr->set_text("Balanced");
+    });
+    quality_high->on_selected.connect([quality_value_ptr](bool selected) {
+        if (selected) quality_value_ptr->set_text("High");
+    });
+
+    quality_row->add_child(std::move(quality_label));
+    quality_row->add_child(std::move(quality_low));
+    quality_row->add_child(std::move(quality_balanced));
+    quality_row->add_child(std::move(quality_high));
+    quality_row->add_child(std::move(quality_value));
+    controls_section->add_child(std::move(quality_row));
+
+    auto volume_row = VBox(4.0f);
+    auto volume_label = Label::create("Volume: 50");
+    auto* volume_label_ptr = volume_label.get();
+    auto volume_slider = Slider::create(0.0f, 100.0f, 50.0f);
+    volume_slider->set_step(1.0f);
+    volume_slider->on_value_changed.connect([volume_label_ptr](f32 value) {
+        volume_label_ptr->set_text("Volume: " + std::to_string(static_cast<int>(value + 0.5f)));
+    });
+    volume_row->add_child(std::move(volume_label));
+    volume_row->add_child(std::move(volume_slider));
+    controls_section->add_child(std::move(volume_row));
+
+    controls_section->add_child(std::move(controls_status));
+    root->add_child(std::move(controls_section));
 
     // Quit button at bottom
     auto quit_button = Button::create("Quit");

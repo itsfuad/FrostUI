@@ -69,6 +69,16 @@ public:
     /// Get frame delta time
     [[nodiscard]] f64 delta_time() const { return delta_time_; }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fonts
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// Load a custom bitmap font (PSF1/PSF2) for software text rendering.
+    [[nodiscard]] Result<void> load_font_from_file(StringView file_path);
+
+    /// Revert software text rendering back to the built-in default font.
+    void reset_font();
+
 private:
     Application() = default;
 
